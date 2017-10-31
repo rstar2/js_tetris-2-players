@@ -1,17 +1,9 @@
 import * as matrix from './matrix.js';
-import Timer from './Timer.js';
 import Player from './Player.js';
-import { PIECES } from './pieces.js';
-
-export const STATE = {
-    INIT: 0,
-    STOPPED: 1,
-    STARTED: 2,
-    PAUSED: 3
-}
 
 export default class Tetris {
-    constructor(canvas, arenaW, arenaH, scale = 1, score) {
+    constructor(controller, canvas, arenaW, arenaH, scale = 1, score) {
+        this._controller = controller;
         this._canvas = canvas;
         this._context = canvas.getContext('2d');
 
@@ -23,44 +15,12 @@ export default class Tetris {
 
         this._player = new Player(arenaW / 2);
 
-        // start with dropping the piece on every 1 sec
-        this._timer = new Timer({
-            update: this._drop.bind(this), render: this._render.bind(this)
-        }, 1, false);
-
         this._score = score;
-
-        this._reset(STATE.INIT);
 
         document.addEventListener('keydown', event => this._handleKeydown(event));
     }
 
-    start(toReset) {
-        // if this is "next" game the reset before startin the new
-        // else if it is normal first game then the reset has already been done
-        if (toReset) {
-            this._reset();
-        }
-
-        this._timer.start();
-    }
-
-    setState(state) {
-        switch (state) {
-            case STATE.STOPPED:
-                this.start(this._state === STATE.STOPPED);
-                break;
-            case STATE.STARTED:
-                this._pause();
-                break;
-            case STATE.PAUSED:
-                this._unpause();
-                break;
-        }
-    }
-
-
-    _reset(state) {
+    reset() {
         // reset the arena
         matrix.reset(this._arena);
 
@@ -71,31 +31,21 @@ export default class Tetris {
         // generate a new piece
         this._generatePiece();
         // render all till now 
-        this._render();
-
-        this._setState(state !== undefined ? state : STATE.STOPPED);
+        this.render();
     }
 
-    _stop() {
-        this._render();
-        this._timer.stop();
+    render() {
+        this._context.fillStyle = 'black';
+        this._context.fillRect(0, 0, this._canvas.width, this._canvas.height);
+
+        // render the arena (current fallen pieces)
+        matrix.render(this._arena, this._context);
+
+        // render the player (current falling piece)
+        matrix.render(this._player.piece, this._context, this._player.color, this._player.pos);
     }
 
-    _pause() {
-        this._timer.pause();
-    }
-
-    _unpause() {
-        this._timer.unpause();
-    }
-
-    _generatePiece() {
-        // generate a new random piece
-        const rand = Math.floor(Math.random() * PIECES.length);
-        this._player.resetWith(PIECES[rand], 'red');
-    }
-
-    _drop() {
+    drop() {
         // make drop
         this._player.drop(1);
 
@@ -119,9 +69,15 @@ export default class Tetris {
 
             // check for Game Over - just check if right after a new piece there's a collision
             if (matrix.isCollide(this._arena, this._player)) {
-                this._stop();
+                // notify the controller that this player-tetris lost
+                this._controller.lost(this);
             }
         }
+    }
+
+    _generatePiece() {
+        // get next piece from the controller
+        this._player.resetWith(this._controller.getNextPiece(this), 'red');
     }
 
     _move(isLeft) {
@@ -166,20 +122,9 @@ export default class Tetris {
         }
     }
 
-    _render() {
-        this._context.fillStyle = 'black';
-        this._context.fillRect(0, 0, this._canvas.width, this._canvas.height);
-
-        // render the arena (current fallen pieces)
-        matrix.render(this._arena, this._context);
-
-        // render the player (current falling piece)
-        matrix.render(this._player.piece, this._context, this._player.color, this._player.pos);
-    }
-
     _handleKeydown(event) {
-        if (this._state !== STATE.STARTED) {
-            return;
+        if (!this._controller.isStarted()) {
+            return
         }
 
         switch (event.keyCode) {
@@ -198,8 +143,8 @@ export default class Tetris {
             case 40:  // down
                 // cancel next "update-drop" while using the keys
                 // in order not to get an additional drop right after the keydown event
-                this._timer.reset();
-                this._drop();
+                //this._timer.reset(); // TODO:
+                this.drop();
                 break;
 
         }
