@@ -9,11 +9,19 @@
 
     <style>
         body {
-            background: #202028;
+            background: #000;
             color: #fff;
             font-family: sans-serif;
             font-size: 2em;
+        }
+        
+        .contatiner {
             text-align: center;
+            display: flex;
+        }
+
+        .player {
+            flex: 1 1 auto;
         }
 
         canvas {
@@ -27,7 +35,7 @@
             background-color: #4CAF50;
             border: none;
             color: white;
-            padding: 15px 32px;
+            padding: 5px 15px;
             text-align: center;
             text-decoration: none;
             font-size: 16px;
@@ -38,12 +46,20 @@
 </head>
 
 <body>
-    <div>
-        <span id="score"></span>
-        <button id="start"></button>
+    <button id="start">Start</button>
+
+    <div class="contatiner">
+        <div class="player">
+            <div id="score1">0</div>
+            <canvas id="screen1" width="240" height="400"></canvas>
+        </div>
+
+        <div class="player">
+            <div id="score2">0</div>
+            <canvas id="screen2" width="240" height="400"></canvas>
+        </div>
     </div>
 
-    <canvas id="screen"></canvas>
 </body>
 
 </html>

@@ -3,7 +3,7 @@ import Timer from './Timer.js';
 import Player from './Player.js';
 import { PIECES } from './pieces.js';
 
-const STATE = {
+export const STATE = {
     INIT: 0,
     STOPPED: 1,
     STARTED: 2,
@@ -11,7 +11,7 @@ const STATE = {
 }
 
 export default class Tetris {
-    constructor(canvas, arenaW, arenaH, scale = 1, score, startButton) {
+    constructor(canvas, arenaW, arenaH, scale = 1, score) {
         this._canvas = canvas;
         this._context = canvas.getContext('2d');
 
@@ -29,13 +29,10 @@ export default class Tetris {
         }, 1, false);
 
         this._score = score;
-        this._startButton = startButton;
 
         this._reset(STATE.INIT);
 
         document.addEventListener('keydown', event => this._handleKeydown(event));
-
-        this._startButton.addEventListener('click', event => this._handleStartPause(event));
     }
 
     start(toReset) {
@@ -45,10 +42,23 @@ export default class Tetris {
             this._reset();
         }
 
-        this._setState(STATE.STARTED);
-
         this._timer.start();
     }
+
+    setState(state) {
+        switch (state) {
+            case STATE.STOPPED:
+                this.start(this._state === STATE.STOPPED);
+                break;
+            case STATE.STARTED:
+                this._pause();
+                break;
+            case STATE.PAUSED:
+                this._unpause();
+                break;
+        }
+    }
+
 
     _reset(state) {
         // reset the arena
@@ -67,18 +77,15 @@ export default class Tetris {
     }
 
     _stop() {
-        this._setState(STATE.STOPPED);
         this._render();
         this._timer.stop();
     }
 
     _pause() {
-        this._setState(STATE.PAUSED);
         this._timer.pause();
     }
 
     _unpause() {
-        this._setState(STATE.STARTED);
         this._timer.unpause();
     }
 
@@ -153,28 +160,6 @@ export default class Tetris {
         }
     }
 
-    _setState(state) {
-        if (this._state === state)
-            return;
-
-        this._state = state;
-
-        let text;
-        switch (this._state) {
-            case STATE.INIT:
-            case STATE.STOPPED:
-                text = 'Start';
-                break;
-            case STATE.STARTED:
-                text = 'Pause';
-                break;
-            case STATE.PAUSED:
-                text = 'Start';
-                break;
-        }
-        this._startButton.innerText = text;
-    }
-
     _renderScore() {
         if (this._score) {
             this._score.innerText = this._player.score;
@@ -217,21 +202,6 @@ export default class Tetris {
                 this._drop();
                 break;
 
-        }
-    }
-
-    _handleStartPause() {
-        switch (this._state) {
-            case STATE.INIT:
-            case STATE.STOPPED:
-                this.start(this._state === STATE.STOPPED);
-                break;
-            case STATE.STARTED:
-                this._pause();
-                break;
-            case STATE.PAUSED:
-                this._unpause();
-                break;
         }
     }
 
