@@ -1,6 +1,6 @@
-import Timer from './Timer.js';
-import Tetris from './Tetris.js';
 import { PIECES } from './pieces.js';
+import Tetris from './Tetris.js';
+import Timer from './Timer.js';
 
 // we have the game arena as 12x20 matrix tiles
 // wih scale of 20 this means 240x400 pixels canvas
@@ -19,82 +19,153 @@ const STATE = {
 const timer = new Timer({ update, render }, 1, false);
 
 function update() {
-    tetrises.forEach(tetris => tetris.drop());
+    tetrises.filter(tetris => !tetris.isEnded()).
+        forEach(tetris => tetris.drop());
 }
 
 function render() {
-    tetrises.forEach(tetris => tetris.render());
+    tetrises.filter(tetris => !tetris.isEnded()).
+        forEach(tetris => tetris.render());
 }
 
 function reset() {
     tetrises.forEach(tetris => tetris.reset());
 }
 
+const FEED_SAME_PIECES = true;
 const piecesQueue = [];
 
 const controller = {
     getNextPiece(tetris) {
-        // TODO:
-        // generate a new random piece
-        const rand = Math.floor(Math.random() * PIECES.length);
-        return PIECES[rand];
+        let next;
+        if (FEED_SAME_PIECES) {
+            // TODO: use the same piece for all (note - keep track where each tetris is)
+            next = Math.floor(Math.random() * PIECES.length);
+        } else {
+            // generate a new random piece for each tetris
+            next = Math.floor(Math.random() * PIECES.length);
+        }
+        return PIECES[next];
     },
 
-    lost(tetris) {
-        render();
-        timer.stop();
-    },
+    ended(tetris) {
+        // check if there's a winner othrewise allow the oher tetrises to continue playing
+        // Note - this is made more general function - not just for 2 tetrises,
 
-    isStarted() {
-        return state === STATE.STARTED;
+        let highest;
+        let notEnded = 0;
+        tetrises.forEach(tetris => {
+            if (!tetris.isEnded()) {
+                notEnded++;
+            }
+
+            if (!highest) {
+                // this is the first
+                highest = tetris;
+            } else if (tetris.getScore() === highest.getScore()) {
+                // check which tetris has the highest points
+                if (highest.isEnded() && (!tetris.isEnded() || tetris.getEndedDate() >= highest.getEndedDate()))
+                    highest = tetris;
+            } else if (tetris.getScore() > highest.getScore()) {
+                // check which tetris has the highest points
+                highest = tetris;
+            }
+        });
+
+        let winner;
+        if (notEnded === 0) {
+            // if all tetrises has ended - so we have a winner
+            winner = highest;
+        } else if (notEnded === 1 && !highest.isEnded()) {
+            // if ONLY ONE tetrises is not ended and it alreay has highest score so it is the winner
+        }
+        // otherwise we have to check the other to end
+
+        tetris.render();
+        if (winner) {
+            winner.renderWinner();
+
+            setState(STATE.STOPPED);
+        }
     }
 };
 
-const tetrises = [
-    new Tetris(controller, document.getElementById('screen1'),
-        ARENA_WIDTH, ARENA_HEIGHT, SCALE, document.getElementById('score1')),
-    new Tetris(controller, document.getElementById('screen2'),
-        ARENA_WIDTH, ARENA_HEIGHT, SCALE, document.getElementById('score2'))
+// the key sets - define as many as players needed
+const keySets = [
+    [90, 67, 81, 87, 88],
+    [37, 39, 219, 221, 40]
 ];
 
+const tetrises = [];
+const players = document.querySelectorAll('.player');
+[...players].forEach(element => {
+    tetrises.push(new Tetris(controller, element.querySelector('.screen'),
+        ARENA_WIDTH, ARENA_HEIGHT, SCALE, element.querySelector('.score'),
+        keySets.shift()));
+});
+
 let state;
-function changeState() {
-    let newState, text;
-    if (!state) {
-        newState = STATE.INIT;
-        text = 'Start';
-        reset();
-    } else {
-        switch (state) {
-            case STATE.INIT:
-            case STATE.STOPPED:
-                newState = STATE.STARTED;
-                text = 'Pause';
-                timer.start();
-                break;
-            case STATE.STARTED:
-                newState = STATE.PAUSED;
-                text = 'Start';
-                timer.pause();
-                break;
-            case STATE.PAUSED:
-                newState = STATE.STARTED;
-                text = 'Pause';
-                timer.unpause();
-                break;
-        }
+function setState(newState) {
+    if (state === newState) {
+        return;
+    }
+
+    let text;
+    switch (newState) {
+        case STATE.INIT:
+            text = 'Start';
+            reset();
+            break;
+        case STATE.STARTED:
+            text = 'Pause';
+            // this depends on the current state
+            switch (state) {
+                case STATE.INIT:
+                    timer.start();
+                    break;
+                case STATE.STOPPED:
+                    reset();
+                    timer.start();
+                    break;
+                case STATE.PAUSED:
+                    timer.unpause();
+                    break;
+
+            }
+            break;
+        case STATE.PAUSED:
+            text = 'Unpause';
+            timer.pause();
+            break;
+        case STATE.STOPPED:
+            text = 'Start';
+            timer.stop();
+            break;
     }
 
     state = newState;
-
     start.innerText = text;
+}
+function changeState() {
+    // change current state
+    let newState;
+    switch (state) {
+        case STATE.INIT:
+        case STATE.STOPPED:
+        case STATE.PAUSED:
+            newState = STATE.STARTED;
+            break;
+        case STATE.STARTED:
+            newState = STATE.PAUSED;
+            break;
+    }
+    setState(newState);
 }
 
 const start = document.getElementById('start');
 start.addEventListener('click', changeState);
 
-changeState();
+setState(STATE.INIT);
 
-
-
-
+// TODO: fix keypress of one player blocks others
+// TODO: increase drop rate as the time goes - more difficult

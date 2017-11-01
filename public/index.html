@@ -14,7 +14,7 @@
             font-family: sans-serif;
             font-size: 2em;
         }
-        
+
         .contatiner {
             text-align: center;
             display: flex;
@@ -27,6 +27,11 @@
         canvas {
             border: solid .2em #fff;
             height: 90vh;
+        }
+
+        canvas.winner {
+            border: solid .3em #A00;
+            transition: border 3s ease;
         }
 
         button {
@@ -50,14 +55,19 @@
 
     <div class="contatiner">
         <div class="player">
-            <div id="score1">0</div>
-            <canvas id="screen1" width="240" height="400"></canvas>
+            <div class="score">0</div>
+            <canvas class="screen" width="240" height="400"></canvas>
         </div>
 
         <div class="player">
-            <div id="score2">0</div>
-            <canvas id="screen2" width="240" height="400"></canvas>
+            <div class="score">0</div>
+            <canvas class="screen" width="240" height="400"></canvas>
         </div>
+
+        <!-- <div class="player">
+            <div class="score">0</div>
+            <canvas class="screen" width="240" height="400"></canvas>
+        </div> -->
     </div>
 
 </body>

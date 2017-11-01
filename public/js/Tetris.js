@@ -2,7 +2,7 @@ import * as matrix from './matrix.js';
 import Player from './Player.js';
 
 export default class Tetris {
-    constructor(controller, canvas, arenaW, arenaH, scale = 1, score) {
+    constructor(controller, canvas, arenaW, arenaH, scale, score, keys = [37, 39, 40, 81, 87]) {
         this._controller = controller;
         this._canvas = canvas;
         this._context = canvas.getContext('2d');
@@ -11,16 +11,23 @@ export default class Tetris {
         this._canvas.height = arenaH * scale;
         this._context.scale(scale, scale);
 
-        this._arena = matrix.create(arenaW, arenaH);
-
-        this._player = new Player(arenaW / 2);
-
         this._score = score;
 
-        document.addEventListener('keydown', event => this._handleKeydown(event));
+        document.addEventListener('keydown', this._handleKeydown.bind(this, keys));
+
+        this._arena = matrix.create(arenaW, arenaH);
+        this._player = new Player(arenaW / 2);
+
+        // dynamic members
+        this._skipNextNotForced = false;
+        this._ended = null; // ended date
     }
 
     reset() {
+        // reset initial members
+        this._ended = null;
+        this._skipNextNotForced = false;
+
         // reset the arena
         matrix.reset(this._arena);
 
@@ -32,6 +39,8 @@ export default class Tetris {
         this._generatePiece();
         // render all till now 
         this.render();
+
+        this.renderWinner(true);
     }
 
     render() {
@@ -45,7 +54,15 @@ export default class Tetris {
         matrix.render(this._player.piece, this._context, this._player.color, this._player.pos);
     }
 
-    drop() {
+    drop(isForced) {
+        // when forced 'drop' from the key-event-listener then skip the next normal one
+        // in order not to get an additional drop right after
+        if (isForced) {
+            this._skipNextNotForced = true;
+        } else if (this._skipNextNotForced) {
+            this._skipNextNotForced = false;
+        }
+
         // make drop
         this._player.drop(1);
 
@@ -69,10 +86,27 @@ export default class Tetris {
 
             // check for Game Over - just check if right after a new piece there's a collision
             if (matrix.isCollide(this._arena, this._player)) {
-                // notify the controller that this player-tetris lost
-                this._controller.lost(this);
+                // notify the controller that this player-tetris 'ended' (though it may still not have lost)
+                this._ended = new Date();
+                this._controller.ended(this);
             }
         }
+    }
+
+    getScore() {
+        return this._player.score;
+    }
+
+    isEnded() {
+        return !!this.getEndedDate();
+    }
+
+    getEndedDate() {
+        return this._ended;
+    }
+
+    renderWinner(remove = false) {
+        this._canvas.classList.toggle('winner', !remove);
     }
 
     _generatePiece() {
@@ -118,38 +152,33 @@ export default class Tetris {
 
     _renderScore() {
         if (this._score) {
-            this._score.innerText = this._player.score;
+            this._score.innerText = this.getScore();
         }
     }
 
-    _handleKeydown(event) {
-        if (!this._controller.isStarted()) {
-            return
+    _handleKeydown(keys, event) {
+        if (this.isEnded()) {
+            return;
         }
 
         switch (event.keyCode) {
-            case 37:   // left
+            case keys[0]:           // left
                 this._move(true);
                 break;
-            case 39:   // right
+            case keys[1]:           // right
                 this._move(false);
                 break;
-            case 81:   // q
+            case keys[2]:           // rotate left
                 this._rotate(true);
                 break;
-            case 87:   // w
+            case keys[3]:           // rotate right
                 this._rotate(false);
                 break;
-            case 40:  // down
-                // cancel next "update-drop" while using the keys
-                // in order not to get an additional drop right after the keydown event
-                //this._timer.reset(); // TODO:
-                this.drop();
+            case keys[4]:           // drop
+                this.drop(true);
                 break;
 
         }
     }
 
 }
-
-// TODO:  increase drop rate as the time goes - more difficult
