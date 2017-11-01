@@ -1,7 +1,8 @@
 /**
  * Create a "blank" (full with zeros) matrix
- * @param {number} width 
- * @param {number} height 
+ * @param {Number} width 
+ * @param {Number} height
+ * @returns {[[]]} created new matrix
  */
 export function create(width, height) {
     const matrix = [];
@@ -9,6 +10,17 @@ export function create(width, height) {
         matrix.push(new Array(width).fill(0));
     }
     return matrix;
+}
+
+/**
+ * Clones a given matrix
+ * @param {[[]]} matrix 
+ * @returns {[[]]} cloned new matrix 
+ */
+export function clone(matrix) {
+    const matrixB = [];
+    matrix.forEach(row => matrixB.push([...row]));
+    return matrixB;
 }
 
 /**
@@ -75,14 +87,14 @@ export function isCollide(matrix, player) {
  * Searches for "full" lines (e.g. tetris) and removes
  * while inserting a new empty line on the top.
  * @param {[[]]} matrix
- * @returns {number} number of points
+ * @returns {Number} number of points
  */
 export function clearFull(matrix) {
     let scoreScale = 10;
     let score = 0;
     // start from the bottom lines
-    rows: for (let y=matrix.length -1; y >=0; y--) {
-        for (let x=0, rowLen=matrix[y].length; x < rowLen;x++) {
+    rows: for (let y = matrix.length - 1; y >= 0; y--) {
+        for (let x = 0, rowLen = matrix[y].length; x < rowLen; x++) {
             if (matrix[y][x] !== 1) {
                 // at least one "empty" found on the row - so skip this row
                 // as continuing with the next one
@@ -97,7 +109,7 @@ export function clearFull(matrix) {
         // deletedRows is an array with the deleted rows,
         // of course in this case it is just one
         const deletedRow = deletedRows[0];
-        
+
         // use the same deleted row and empty it , e.g. fill it with  "zeros"
         // and pus on the top, e.g. as first
         deletedRow.fill(0);
@@ -128,7 +140,7 @@ export function clearFull(matrix) {
  */
 export function rotate(matrix, isLeft) {
     // ROTATE = 1.Transpose + 2.Reverse
-    
+
     // 1.Transpose
     // slice diagonally the matrix 
     for (let y = 0, lenRows = matrix.length; y < lenRows; y++) {
@@ -138,9 +150,9 @@ export function rotate(matrix, isLeft) {
                 matrix[x][y],
                 matrix[y][x]
             ] = [
-                matrix[y][x],
-                matrix[x][y]
-            ];
+                    matrix[y][x],
+                    matrix[x][y]
+                ];
         }
     }
 
@@ -156,7 +168,7 @@ export function rotate(matrix, isLeft) {
  * @param {[[]]} matrix 
  * @param {CanvasRenderingContext2D} context 
  * @param {Sring} color 
- * @param {{x: number, y: number}} offset 
+ * @param {{x: Number, y: Number}} offset 
  */
 export function render(matrix, context, color = 'white', offset = { x: 0, y: 0 }) {
     context.fillStyle = color;

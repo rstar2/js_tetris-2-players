@@ -13,6 +13,7 @@ export default class Tetris {
 
         this._score = score;
 
+        console.log("Listen for keys " + keys)
         document.addEventListener('keydown', this._handleKeydown.bind(this, keys));
 
         this._arena = matrix.create(arenaW, arenaH);
@@ -20,6 +21,7 @@ export default class Tetris {
 
         // dynamic members
         this._skipNextNotForced = false;
+        this._pieceCount = 0;
         this._ended = null; // ended date
     }
 
@@ -27,6 +29,7 @@ export default class Tetris {
         // reset initial members
         this._ended = null;
         this._skipNextNotForced = false;
+        this._pieceCount = 0;
 
         // reset the arena
         matrix.reset(this._arena);
@@ -110,8 +113,9 @@ export default class Tetris {
     }
 
     _generatePiece() {
+        this._pieceCount++;
         // get next piece from the controller
-        this._player.resetWith(this._controller.getNextPiece(this), 'red');
+        this._player.resetWith(this._controller.getPiece(this._pieceCount), 'red');
     }
 
     _move(isLeft) {
@@ -161,6 +165,8 @@ export default class Tetris {
             return;
         }
 
+        console.log('Keydown ' + event.keyCode);
+
         switch (event.keyCode) {
             case keys[0]:           // left
                 this._move(true);
@@ -169,6 +175,7 @@ export default class Tetris {
                 this._move(false);
                 break;
             case keys[2]:           // rotate left
+                console.log('Rotate left ' + event.keyCode + " " + keys[2]);
                 this._rotate(true);
                 break;
             case keys[3]:           // rotate right

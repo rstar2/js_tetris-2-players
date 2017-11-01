@@ -1,4 +1,5 @@
 import { PIECES } from './pieces.js';
+import * as matrix from './matrix.js';
 import Tetris from './Tetris.js';
 import Timer from './Timer.js';
 
@@ -29,23 +30,52 @@ function render() {
 }
 
 function reset() {
+    piecesQueue = new Map();
+    piecesCount = 0;
+
     tetrises.forEach(tetris => tetris.reset());
 }
 
 const FEED_SAME_PIECES = true;
-const piecesQueue = [];
+let piecesQueue = new Map();
+let piecesCount = 0;
 
 const controller = {
-    getNextPiece(tetris) {
-        let next;
+    getPiece(tetrisPieceCount) {
+        let index;
         if (FEED_SAME_PIECES) {
-            // TODO: use the same piece for all (note - keep track where each tetris is)
-            next = Math.floor(Math.random() * PIECES.length);
+            // use the same piece for all (note - keep track where each tetris is)
+
+            // if someone requests a new piece - then generate it
+            if (piecesCount < tetrisPieceCount) {
+                // note it should be always greate with 1 maximum - e.g. next, no some that is far away in time
+                if (piecesCount + 1 !== tetrisPieceCount)
+                    throw new Error(`Cannot request a piece with count ${tetrisPieceCount}`);
+
+                index = Math.floor(Math.random() * PIECES.length);
+                piecesQueue.set(tetrisPieceCount, { index, notified: 1 });
+                piecesCount = tetrisPieceCount;
+            } else {
+                const item = piecesQueue.get(tetrisPieceCount);
+                if (!item) {
+                    throw new Error(`Cannot find a piece with count ${tetrisPieceCount} - it must be expired`);
+                }
+
+                // get the same samved index from the item
+                index = item.index;
+                item.notified++;
+
+                // if all tetrises are notified then discard the item in the map
+                if (item.notified === tetrises.length) {
+                    piecesQueue.delete(tetrisPieceCount);
+                }
+            }
+
         } else {
             // generate a new random piece for each tetris
-            next = Math.floor(Math.random() * PIECES.length);
+            index = Math.floor(Math.random() * PIECES.length);
         }
-        return PIECES[next];
+        return matrix.clone(PIECES[index]);
     },
 
     ended(tetris) {
