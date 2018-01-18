@@ -48,7 +48,7 @@ const controller = {
 
             // if someone requests a new piece - then generate it
             if (piecesCount < tetrisPieceCount) {
-                // note it should be always greate with 1 maximum - e.g. next, no some that is far away in time
+                // note it should be always create with 1 maximum - e.g. next, no some that is far away in time
                 if (piecesCount + 1 !== tetrisPieceCount)
                     throw new Error(`Cannot request a piece with count ${tetrisPieceCount}`);
 
@@ -61,7 +61,7 @@ const controller = {
                     throw new Error(`Cannot find a piece with count ${tetrisPieceCount} - it must be expired`);
                 }
 
-                // get the same samved index from the item
+                // get the same saved index from the item
                 index = item.index;
                 item.notified++;
 
@@ -79,7 +79,7 @@ const controller = {
     },
 
     ended(tetris) {
-        // check if there's a winner othrewise allow the oher tetrises to continue playing
+        // check if there's a winner otherwise allow the other tetrises to continue playing
         // Note - this is made more general function - not just for 2 tetrises,
 
         let highest;
@@ -107,7 +107,7 @@ const controller = {
             // if all tetrises has ended - so we have a winner
             winner = highest;
         } else if (notEnded === 1 && !highest.isEnded()) {
-            // if ONLY ONE tetrises is not ended and it alreay has highest score so it is the winner
+            // if ONLY ONE tetrises is not ended and it already has highest score so it is the winner
         }
         // otherwise we have to check the other to end
 
@@ -117,6 +117,10 @@ const controller = {
 
             setState(STATE.STOPPED);
         }
+    },
+
+    isStarted() {
+        return state === STATE.STARTED;
     }
 };
 
@@ -151,21 +155,19 @@ function setState(newState) {
             // this depends on the current state
             switch (state) {
                 case STATE.INIT:
-                    timer.start();
+                case STATE.PAUSED:
                     break;
                 case STATE.STOPPED:
                     reset();
-                    timer.start();
                     break;
-                case STATE.PAUSED:
-                    timer.unpause();
-                    break;
-
+                default:
+                    throw new Error(`Invalid current state ${state} when changing to new state ${newState}`);
             }
+            timer.start();
             break;
         case STATE.PAUSED:
             text = 'Unpause';
-            timer.pause();
+            timer.stop();
             break;
         case STATE.STOPPED:
             text = 'Start';

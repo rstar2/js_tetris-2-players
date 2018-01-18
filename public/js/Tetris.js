@@ -161,7 +161,7 @@ export default class Tetris {
     }
 
     _handleKeydown(keys, event) {
-        if (this.isEnded()) {
+        if (!this._controller.isStarted() || this.isEnded()) {
             return;
         }
 

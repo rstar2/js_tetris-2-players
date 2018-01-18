@@ -6,7 +6,7 @@ export default class Player {
         this._pos = new Vector(arenaCenter, 0);
         this._piece = undefined;
         this._color = undefined;
-        this._scrore = 0;
+        this._score = 0;
     }
 
     get pos() {
